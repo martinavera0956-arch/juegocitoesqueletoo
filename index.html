@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Citoesqueleto - Juego de Memoria</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #0a0a0f;
+  color: #e8e8f0;
+  font-family: Arial, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 12px;
+  background-image: radial-gradient(ellipse at 20% 20%, rgba(114,9,183,0.15) 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, rgba(0,245,212,0.1) 0%, transparent 50%);
+}
+
+header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+header h1 {
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: 4px;
+  background: linear-gradient(90deg, #00f5d4, #f72585);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+header p {
+  color: #6b6b80;
+  margin-top: 6px;
+  font-size: 0.85rem;
+}
+
+.stats {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.stat {
+  background: #13131a;
+  border: 1px solid rgba(0,245,212,0.2);
+  border-radius: 12px;
+  padding: 10px 16px;
+  text-align: center;
+  min-width: 75px;
+}
+
+.stat-value {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #00f5d4;
+}
+
+.warning { color: #f72585 !important; }
+
+.stat-label {
+  font-size: 0.6rem;
+  color: #6b6b80;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  width: 100%;
+  max-width: 620px;
+}
+
+.card {
+  cursor: pointer;
+  height: 105px;
+  position: relative;
+}
+
+.card-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transition: transform 0.5s ease;
+  -webkit-transition: -webkit-transform 0.5s ease;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  border-radius: 12px;
+}
+
+.card.flipped .card-inner,
+.card.matched .card-inner {
+  transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg);
+}
+
+.card-back, .card-front {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  text-align: center;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.card-back {
+  background: #1a1a2e;
+  border: 1px solid rgba(114,9,183,0.5);
+}
+
+.card-back-icon { font-size: 1.5rem; }
+
+.card-back-label {
+  font-size: 0.5rem;
+  color: #6b6b80;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.card-front {
+  background: #13131a;
+  border: 1px solid rgba(0,245,212,0.25);
+  transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg);
+  gap: 3px;
+}
+
+.card.matched .card-front {
+  border-color: #00f5d4;
+  background: rgba(0,245,212,0.08);
+}
+
+.card.wrong .card-back,
+.card.wrong .card-front {
+  border-color: #f72585;
+}
+
+.card-emoji { font-size: 1.3rem; }
+
+.card-text {
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: #e8e8f0;
+  line-height: 1.3;
+}
+
+.card-type {
+  font-size: 0.48rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-top: 2px;
+  color: #00f5d4;
+}
+
+.concepto { color: #f72585; }
+.funcion { color: #4cc9f0; }
+.componente { color: #00f5d4; }
+
+.message {
+  margin-top: 14px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #00f5d4;
+  min-height: 1.4rem;
+  text-align: center;
+  letter-spacing: 1px;
+}
+
+.btn {
+  margin-top: 14px;
+  padding: 12px 28px;
+  background: transparent;
+  border: 2px solid #00f5d4;
+  color: #00f5d4;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: none;
+}
+
+.btn.visible { display: inline-block; }
+
+.win-screen {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+  padding: 20px;
+}
+
+.win-screen.visible { display: flex; }
+
+.win-title {
+  font-size: 2.8rem;
+  font-weight: 900;
+  letter-spacing: 4px;
+  background: linear-gradient(90deg, #00f5d4, #f72585);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.win-title.timeout {
+  background: linear-gradient(90deg, #f72585, #ff006e);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.win-sub {
+  color: #6b6b80;
+  font-size: 0.9rem;
+  max-width: 300px;
+  line-height: 1.6;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>CITOESQUELETO</h1>
+  <p>Una cada componente con su descripcion</p>
+</header>
+
+<div class="stats">
+  <div class="stat">
+    <div class="stat-value" id="moves">0</div>
+    <div class="stat-label">Intentos</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value" id="pairs">0/8</div>
+    <div class="stat-label">Pares</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value" id="timer">200s</div>
+    <div class="stat-label">Tiempo</div>
+  </div>
+</div>
+
+<div class="grid" id="grid"></div>
+<div class="message" id="message"></div>
+<button class="btn" id="restartBtn" onclick="initGame()">JUGAR DE NUEVO</button>
+
+<div class="win-screen" id="winScreen">
+  <div class="win-title" id="winTitle">GANASTE!</div>
+  <div class="win-sub" id="winSub"></div>
+  <button class="btn visible" onclick="initGame()">JUGAR DE NUEVO</button>
+</div>
+
+<script>
+var pairs = [
+  { id: 1, emoji: '🧵', imageLabel: 'Filamentos Intermedios', concept: 'Fibras de 7-11nm sin polaridad que dan resistencia mecanica a la celula', type: 'concepto' },
+  { id: 2, emoji: '🏛️', imageLabel: 'Lamina Nuclear', concept: 'Malla bidimensional que refuerza la envoltura nuclear y se reorganiza en la mitosis', type: 'funcion' },
+  { id: 3, emoji: '🔵', imageLabel: 'Microtubulos', concept: 'Estructuras tubulares huecas de 25nm formadas por dimeros de alfa y beta tubulina', type: 'concepto' },
+  { id: 4, emoji: '⚡', imageLabel: 'Inestabilidad Dinamica', concept: 'Alternancia entre polimerizacion y despolimerizacion de microtubulos por hidrolisis de GTP', type: 'funcion' },
+  { id: 5, emoji: '🚂', imageLabel: 'Proteinas Motoras', concept: 'Quinesinas y dineinas: se desplazan sobre microtubulos hidrolizando ATP para transportar organulos', type: 'funcion' },
+  { id: 6, emoji: '🌀', imageLabel: 'Microfilamentos', concept: 'Cadena helicoidal de actina globular, los mas delgados del citoesqueleto, con polaridad', type: 'concepto' },
+  { id: 7, emoji: '🚶', imageLabel: 'Treadmilling', concept: 'El filamento crece por el extremo positivo y se pierde por el negativo manteniendo su longitud', type: 'funcion' },
+  { id: 8, emoji: '💪', imageLabel: 'Contraccion Muscular', concept: 'Deslizamiento de filamentos de actina sobre miosina II en los sarcomeros usando ATP', type: 'funcion' }
+];
+
+var cards = [];
+var flipped = [];
+var matched = [];
+var moves = 0;
+var pairsFound = 0;
+var timer = 200;
+var timerInterval = null;
+var canFlip = true;
+
+function shuffle(arr) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+  }
+  return a;
+}
+
+function initGame() {
+  document.getElementById('winScreen').classList.remove('visible');
+  document.getElementById('winTitle').className = 'win-title';
+  document.getElementById('winTitle').textContent = 'GANASTE!';
+  document.getElementById('grid').style.display = 'grid';
+  document.getElementById('restartBtn').classList.remove('visible');
+  document.getElementById('message').textContent = '';
+  document.getElementById('timer').className = 'stat-value';
+
+  flipped = [];
+  matched = [];
+  moves = 0;
+  pairsFound = 0;
+  timer = 200;
+  canFlip = true;
+
+  clearInterval(timerInterval);
+  timerInterval = setInterval(function() {
+    timer--;
+    document.getElementById('timer').textContent = timer + 's';
+    if (timer <= 30) {
+      document.getElementById('timer').className = 'stat-value warning';
+    }
+    if (timer <= 0) {
+      clearInterval(timerInterval);
+      timeOut();
+    }
+  }, 1000);
+
+  updateStats();
+
+  var cardData = [];
+  var i;
+  for (i = 0; i < pairs.length; i++) {
+    var p = pairs[i];
+    cardData.push({ pairId: p.id, type: 'image', emoji: p.emoji, label: p.imageLabel });
+    cardData.push({ pairId: p.id, type: 'text', emoji: '🔬', label: p.concept, cardType: p.type });
+  }
+
+  cards = shuffle(cardData);
+
+  var grid = document.getElementById('grid');
+  grid.innerHTML = '';
+
+  for (var j = 0; j < cards.length; j++) {
+    (function(index) {
+      var card = cards[index];
+      var el = document.createElement('div');
+      el.className = 'card';
+
+      var inner = document.createElement('div');
+      inner.className = 'card-inner';
+
+      var back = document.createElement('div');
+      back.className = 'card-back';
+
+      var backIcon = document.createElement('div');
+      backIcon.className = 'card-back-icon';
+      backIcon.textContent = '🧬';
+
+      var backLabel = document.createElement('div');
+      backLabel.className = 'card-back-label';
+      backLabel.textContent = card.type === 'image' ? 'Componente' : 'Descripcion';
+
+      back.appendChild(backIcon);
+      back.appendChild(backLabel);
+
+      var front = document.createElement('div');
+      front.className = 'card-front';
+
+      if (card.type === 'image') {
+        var emoji = document.createElement('div');
+        emoji.className = 'card-emoji';
+        emoji.textContent = card.emoji;
+        var text = document.createElement('div');
+        text.className = 'card-text';
+        text.textContent = card.label;
+        var type = document.createElement('div');
+        type.className = 'card-type componente';
+        type.textContent = 'COMPONENTE';
+        front.appendChild(emoji);
+        front.appendChild(text);
+        front.appendChild(type);
+      } else {
+        var text2 = document.createElement('div');
+        text2.className = 'card-text';
+        text2.textContent = card.label;
+        var type2 = document.createElement('div');
+        type2.className = 'card-type ' + card.cardType;
+        type2.textContent = card.cardType === 'concepto' ? 'CONCEPTO' : 'FUNCION';
+        front.appendChild(text2);
+        front.appendChild(type2);
+      }
+
+      inner.appendChild(back);
+      inner.appendChild(front);
+      el.appendChild(inner);
+
+      el.addEventListener('click', function() { flipCard(el, index); });
+      grid.appendChild(el);
+    })(j);
+  }
+}
+
+function flipCard(el, index) {
+  if (!canFlip) return;
+  if (matched.indexOf(index) !== -1) return;
+  if (flipped.indexOf(index) !== -1) return;
+  if (flipped.length >= 2) return;
+
+  el.classList.add('flipped');
+  flipped.push(index);
+
+  if (flipped.length === 2) {
+    moves++;
+    updateStats();
+    checkMatch();
+  }
+}
+
+function checkMatch() {
+  canFlip = false;
+  var i1 = flipped[0];
+  var i2 = flipped[1];
+  var c1 = cards[i1];
+  var c2 = cards[i2];
+
+  if (c1.pairId === c2.pairId && c1.type !== c2.type) {
+    setTimeout(function() {
+      var els = document.querySelectorAll('.card');
+      els[i1].classList.add('matched');
+      els[i2].classList.add('matched');
+      matched.push(i1);
+      matched.push(i2);
+      flipped = [];
+      pairsFound++;
+      updateStats();
+      document.getElementById('message').textContent = 'Par encontrado! 🎉';
+      canFlip = true;
+      if (pairsFound === pairs.length) { endGame(); }
+    }, 400);
+  } else {
+    setTimeout(function() {
+      var els = document.querySelectorAll('.card');
+      els[i1].classList.add('wrong');
+      els[i2].classList.add('wrong');
+      setTimeout(function() {
+        els[i1].classList.remove('flipped');
+        els[i1].classList.remove('wrong');
+        els[i2].classList.remove('flipped');
+        els[i2].classList.remove('wrong');
+        flipped = [];
+        document.getElementById('message').textContent = '';
+        canFlip = true;
+      }, 700);
+    }, 600);
+  }
+}
+
+function updateStats() {
+  document.getElementById('moves').textContent = moves;
+  document.getElementById('pairs').textContent = pairsFound + '/8';
+}
+
+function endGame() {
+  clearInterval(timerInterval);
+  var elapsed = 200 - timer;
+  setTimeout(function() {
+    document.getElementById('grid').style.display = 'none';
+    document.getElementById('message').textContent = '';
+    document.getElementById('winScreen').classList.add('visible');
+    var rating = moves <= 10 ? 'Extraordinario!' : moves <= 16 ? 'Muy bien!' : 'Lo lograste!';
+    document.getElementById('winSub').textContent = 'Completaste el juego en ' + elapsed + ' segundos con ' + moves + ' intentos. ' + rating;
+  }, 800);
+}
+
+function timeOut() {
+  canFlip = false;
+  document.getElementById('grid').style.display = 'none';
+  document.getElementById('message').textContent = '';
+  document.getElementById('winScreen').classList.add('visible');
+  document.getElementById('winTitle').textContent = 'TIEMPO!';
+  document.getElementById('winTitle').className = 'win-title timeout';
+  document.getElementById('winSub').textContent = 'Se acabo el tiempo. Encontraste ' + pairsFound + ' de 8 pares. Volve a intentarlo!';
+}
+
+initGame();
+</script>
+</body>
+</html>
